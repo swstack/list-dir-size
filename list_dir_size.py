@@ -1,8 +1,3 @@
-#!/usr/bin/env python
-
-
-"""Run this script to recursively list directory size"""
-
 import argparse
 import os
 import sys
@@ -33,7 +28,7 @@ def _normalize_path(path):
     """
 
     if path.startswith('~'):
-        path = os.path.join(os.path.expanduser('~'), path.strip('~').split('/'))
+        path = os.path.join(os.path.expanduser('~'), *path.strip('~').split('/'))
 
     absolute_path = os.path.abspath(path)
     if not os.path.isdir(absolute_path):
@@ -43,26 +38,33 @@ def _normalize_path(path):
     return absolute_path
 
 
-def _walklevel(rootdir, level=1):
-    """Generator for walking through the directory tree given a root"""
+def _walkdirs(rootdir, level=1):
+    """Generator implementation of os.walk that accepts a level argument"""
 
-    rootdir = rootdir.rstrip(os.path.sep)
-    num_sep = rootdir.count(os.path.sep)
+    rootdir = os.path.abspath(rootdir)
+    desired_level = rootdir.count(os.path.sep) + level
+
     for root, dirs, files in os.walk(rootdir):
-        yield root, dirs, files
-        num_sep_this = root.count(os.path.sep)
-        if num_sep + level <= num_sep_this:
-            raise StopIteration
+        if not dirs:
+            break
+
+        current_level = root.count(os.path.sep)
+        if current_level >= desired_level:
+            break
+
+        for d in dirs:
+            yield os.path.abspath(os.path.join(root, d))
 
 
-def _calc_dir_size(directory, human_readable=True):
+def _calc_dir_size(directory):
     """Calculate the size of a directory in bytes"""
 
     total_size = 0
-    for dirpath, dirnames, filenames in os.walk(directory):
-        for f in filenames:
-            fp = os.path.join(dirpath, f)
-            total_size += os.path.getsize(fp)
+    for root, dirs, files in os.walk(directory):
+        for f in files:
+            fp = os.path.join(root, f)
+            if os.path.exists(fp):
+                total_size += os.path.getsize(fp)
     return total_size
 
 
@@ -73,6 +75,7 @@ def _human_readable(size_in_bytes):
             _human_readable(500)      == 500B
             _human_readable(1024)     == 1KB
             _human_readable(11500)    == 11.2KB
+            _human_readable(1000000)  ==
     """
 
     if size_in_bytes < 1024:
@@ -91,14 +94,12 @@ def _human_readable(size_in_bytes):
 def main():
     args = _get_args()
     directory = _normalize_path(args.directory)
-    for root, dirs, files in _walklevel(directory, level=args.levels):
-
-        size = _calc_dir_size(root)
+    for d in _walkdirs(directory, level=args.levels):
+        size = _calc_dir_size(d)
         if args.human_readable:
             size = _human_readable(size)
-
         size_rjusted = "{}".format(size).rjust(80, '.')
-        absolute_path = os.path.abspath(root)
+        absolute_path = os.path.abspath(d)
         out = "{}{}".format(absolute_path, size_rjusted[-(80 - len(absolute_path)):])
         print out
 
