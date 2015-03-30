@@ -12,6 +12,7 @@ def _get_args():
                         help='Which directory? (Default CWD)')
     parser.add_argument('-l', '--levels',
                         default=1,
+                        type=int,
                         help='How many directories deep? (Default 1)')
     parser.add_argument('-hr', '--human-readable',
                         action='store_true',
@@ -38,8 +39,8 @@ def _normalize_path(path):
     return absolute_path
 
 
-def _walkdirs(rootdir, level=1):
-    """Generator implementation of os.walk that accepts a level argument"""
+def _walkdirs2(rootdir, level=1):
+    """Walk directory tree from a root destination to a given level"""
 
     rootdir = os.path.abspath(rootdir)
     desired_level = rootdir.count(os.path.sep) + level
@@ -55,6 +56,19 @@ def _walkdirs(rootdir, level=1):
         for d in dirs:
             yield os.path.abspath(os.path.join(root, d))
 
+
+def _walkdirs(rootdir, level=1):
+    if level > 0:
+        for root, dirs, files in os.walk(os.path.abspath(rootdir)):
+            break
+
+        for d in dirs:
+            yield d  # yield the root
+            for root, dirs, files in os.walk
+            yield os.path.abspath(os.path.join(root, d))
+        break
+        level -= 1
+        _walkdirs()
 
 def _calc_dir_size(directory):
     """Calculate the size of a directory in bytes"""
