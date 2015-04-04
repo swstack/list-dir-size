@@ -1,6 +1,7 @@
 import argparse
 import os
 import sys
+from collections import OrderedDict
 
 
 def _get_args():
@@ -39,36 +40,33 @@ def _normalize_path(path):
     return absolute_path
 
 
-def _walkdirs2(rootdir, level=1):
-    """Walk directory tree from a root destination to a given level"""
+def _display_dir_tree(dirs):
+    import pprint
+    pprint.pprint(dirs)
 
-    rootdir = os.path.abspath(rootdir)
+
+def _walkdirs(rootdir, level=3):
+    """Return all directories that are within <level> deep of <rootdir>
+
+    In the form:
+
+    """
+
+    dir_levels = OrderedDict()
+
+    if level <= 0:
+        return dir_levels
+
     desired_level = rootdir.count(os.path.sep) + level
+    for parent, dirs, files in os.walk(os.path.abspath(rootdir)):
+        current_level = parent.count(os.path.sep)
+        if current_level < desired_level:
+            for dirname in dirs:
+                dir_levels.setdefault(parent, []).append(dirname)
+                # dir_levels.append((parent, dirname))
 
-    for root, dirs, files in os.walk(rootdir):
-        if not dirs:
-            break
+    return dir_levels
 
-        current_level = root.count(os.path.sep)
-        if current_level >= desired_level:
-            break
-
-        for d in dirs:
-            yield os.path.abspath(os.path.join(root, d))
-
-
-def _walkdirs(rootdir, level=1):
-    if level > 0:
-        for root, dirs, files in os.walk(os.path.abspath(rootdir)):
-            break
-
-        for d in dirs:
-            yield d  # yield the root
-            for root, dirs, files in os.walk
-            yield os.path.abspath(os.path.join(root, d))
-        break
-        level -= 1
-        _walkdirs()
 
 def _calc_dir_size(directory):
     """Calculate the size of a directory in bytes"""
@@ -106,6 +104,7 @@ def _human_readable(size_in_bytes):
 
 
 def main():
+    return
     args = _get_args()
     directory = _normalize_path(args.directory)
     for d in _walkdirs(directory, level=args.levels):
@@ -119,4 +118,10 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    root = "/home/stacked/projects/GE"
+    dirs = _walkdirs(root)
+    _display_dir_tree(root, dirs)
+    # for x in dirs.items():
+    #     continue
+    #     pprint.pprint(x)
+    # main()
